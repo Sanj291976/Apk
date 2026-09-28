@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rice Weight Calculator - 0.580</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;font-family:system-ui,Arial}
+body{margin:0;background:#0f1a0f;color:#fff;padding-bottom:90px}
+.top-cards{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:8px;background:#000}
+.top-cards div{background:#fff;color:#111;padding:8px;border-radius:8px;text-align:center}
+.top-cards div:nth-child(3){background:#fff3d6}
+.top-cards div:nth-child(4){background:#e6f7ed}
+.top-cards b{font-size:10px;color:#666;display:block}
+.top-cards span{font-size:22px;font-weight:900;color:#2e7d32}
+.header{padding:10px;background:#0f1a0f;border-bottom:2px solid #00c853}
+.input-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.input-row input{background:#1a2a1a;border:1.5px solid #2a4a2a;color:#fff;padding:10px;border-radius:8px;font-size:15px;width:100%}
+.btn{border:none;padding:10px 16px;border-radius:8px;font-weight:800;cursor:pointer}
+.btn-green{background:#00e676;color:#000}
+.btn-yellow{background:#ffb300;color:#000}
+.btn-dark{background:#1a2a1a;color:#fff;border:1px solid #333}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;padding:8px}
+.stats div{background:#162116;border:1px solid #2a4a2a;border-radius:8px;text-align:center;padding:8px 2px}
+.stats div.active{background:#3a2a00;border-color:#ffb300}
+.stats b{font-size:11px;display:block}
+.stats span{font-size:15px;font-weight:900}
+.stats .yellow{color:#ffb300}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:400px}
+th{color:#ffb300;font-size:14px;padding:8px;background:#142314;position:sticky;top:0}
+th small{color:#777;display:block;font-size:11px}
+td{padding:6px;text-align:center;border-top:1px solid #1e331e}
+td input{width:100%;background:#162116;border:1.5px solid #2a4a2a;color:#fff;padding:12px 4px;border-radius:8px;text-align:center;font-size:16px;font-weight:700}
+td input:focus{border-color:#00e676;outline:none;background:#1e3a1e}
+.del{color:#ff5252;background:none;border:none;font-size:22px}
+.tot-row{background:#0a1a0a;color:#ffb300;font-weight:900}
+.tot-row td{padding:10px}
+#receiptImg{width:100%;max-height:200px;object-fit:contain;border-radius:8px;display:none;margin-top:8px;border:1.5px dashed #00e676}
+</style>
+</head>
+<body>
+<div id="capture">
+<div class="top-cards">
+<div><b>TOTAL BAGS</b><span id="tBags">0</span></div>
+<div><b>TOTAL GIVEN</b><span id="tGiven" style="font-size:18px">0.000 kg</span></div>
+<div><b>DEDUCTED<br>(0.580KG/BAG)</b><span id="tDeduct" style="color:#b47b00">0.000 kg</span></div>
+<div><b>NET DELIVERED</b><span id="tNet" style="color:#005a22">0.000 kg</span></div>
+</div>
+
+<div class="header">
+<h3 style="color:#00e676;margin:6px 0">Rice Allotment Calculator</h3>
+<div class="input-row">
+<div style="flex:1">NAME <input id="pName" placeholder="Person name..."></div>
+<div style="flex:1">ALLOTMENT (QTL) <input id="allot" type="number" step="0.01" placeholder="e.g. 10"></div>
+</div>
+<div class="input-row">
+<button class="btn btn-green" onclick="addRow()">+ Row</button>
+<button class="btn btn-dark" onclick="clearAll()">Clear</button>
+<button class="btn btn-yellow" onclick="window.print()">🖨️ Print / PDF</button>
+<button class="btn btn-dark" style="border-color:#ffb300;color:#ffb300" onclick="saveImage()">📷 Save Receipt Image</button>
+</div>
+<div class="input-row">
+<label style="flex:1;background:#1a2a1a;padding:8px;border-radius:8px;border:1px dashed #666;text-align:center">
+📸 Add Weight Slip Photo <input type="file" id="cam" accept="image/*" capture="environment" hidden onchange="loadImg(event)">
+</label>
+<span style="background:#1a2a1a;border:1px solid #ffb300;color:#ffb300;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:700">0.580 kg deducted / bag</span>
+</div>
+<img id="receiptImg">
+</div>
+
+<div class="stats">
+<div class="active"><b>ALLOTMENT</b><span class="yellow" id="sAllot">0.00</span><small>QTL</small></div>
+<div><b>TOTAL BAGS</b><span id="sBags">0</span></div>
+<div><b>GIVEN KG</b><span id="sGiven">0.000</span></div>
+<div><b>DEDUCTED KG</b><span id="sDeduct">0.000</span></div>
+<div><b>STILL NEED</b><span id="sNeed" style="color:#ff5252">0.0</span><small>kg</small></div>
+</div>
+
+<div style="text-align:center;font-size:12px;padding:6px;background:#162116;border-top:1px solid #00e676">
+BAGS <b id="bBags" style="color:#ffb300">0</b> &nbsp; TOTAL <b id="bTotal">0.000 kg</b> &nbsp; DEDUCTED <b id="bDeduct" style="color:#ffb300">0.000 kg</b><br>
+NET KG <b id="bNetKg">0.000</b> &nbsp; NET QTL <b id="bNetQtl">0.0000</b>
+</div>
+
+<div class="table-wrap">
+<table id="mainTable">
+<thead><tr><th>#</th><th>Bag 1<small>kg</small></th><th>Bag 2<small>kg</small></th><th>Bag 3<small>kg</small></th><th>Bag 4<small>kg</small></th><th>Bag 5<small>kg</small></th><th></th></tr></thead>
+<tbody id="tbody"></tbody>
+<tfoot><tr class="tot-row"><td>TOT</td><td id="c1">-</td><td id="c2">-</td><td id="c3">-</td><td id="c4">-</td><td id="c5">-</td><td></td></tr></tfoot>
+</table>
+</div>
+</div>
+
+<div style="padding:10px;display:flex;gap:10px;position:fixed;bottom:0;left:0;right:0;background:#0f1a0f;border-top:1px solid #333">
+<button class="btn btn-green" style="flex:0 0 110px" onclick="addRow()">+ Add Row</button>
+<small style="color:#777;align-self:center">0.580 kg deducted per bag • Tab/Enter = next • Bag 5 done = new row</small>
+</div>
+
+<script>
+let rowCount=0;
+function addRow(){
+ rowCount++;
+ let tr=document.createElement(\'tr\');
+ tr.innerHTML=`<td style="color:#777">${rowCount}</td>
+ ${[0,1,2,3,4].map(c=>`<td><input type="number" step="0.001" inputmode="decimal" class="bag-input" data-col="${c}" placeholder="-" oninput="calc()" onkeydown="handleKey(event,${c})"></td>`).join(\'\')}
+ <td><button class="del" onclick="this.closest(\'tr\').remove();calc()">×</button></td>`;
+ document.getElementById(\'tbody\').appendChild(tr);
+ tr.querySelector(\'input\').focus();
+ calc();
+}
+function handleKey(e,col){
+ if(e.key===\'Enter\' || e.key===\'Tab\'){
+   if(col===4){ e.preventDefault(); addRow(); }
+ }
+}
+function calc(){
+ let totalBags=0, totalGiven=0, colTotals=[0,0,0,0,0];
+ document.querySelectorAll(\'.bag-input\').forEach(inp=>{
+   let v=parseFloat(inp.value);
+   if(!isNaN(v) && v>0){ totalBags++; totalGiven+=v; colTotals[parseInt(inp.dataset.col)]+=v; }
+ });
+ let deducted=totalBags*0.580;
+ let net=totalGiven-deducted;
+ let allotQtl=parseFloat(document.getElementById(\'allot\').value)||0;
+ let allotKg=allotQtl*100;
+ let stillNeed=allotKg - net;
+ 
+ document.getElementById(\'tBags\').textContent=totalBags;
+ document.getElementById(\'tGiven\').textContent=totalGiven.toFixed(3)+\' kg\';
+ document.getElementById(\'tDeduct\').textContent=deducted.toFixed(3)+\' kg\';
+ document.getElementById(\'tNet\').textContent=net.toFixed(3)+\' kg\';
+ 
+ document.getElementById(\'sAllot\').textContent=allotQtl.toFixed(2);
+ document.getElementById(\'sBags\').textContent=totalBags;
+ document.getElementById(\'sGiven\').textContent=totalGiven.toFixed(3);
+ document.getElementById(\'sDeduct\').textContent=deducted.toFixed(3);
+ let needEl=document.getElementById(\'sNeed\');
+ needEl.textContent=allotQtl?stillNeed.toFixed(1):\'0.0\';
+ needEl.style.color=stillNeed>0?\'#ff5252\':\'#00e676\';
+
+ document.getElementById(\'bBags\').textContent=totalBags;
+ document.getElementById(\'bTotal\').textContent=totalGiven.toFixed(3)+\' kg\';
+ document.getElementById(\'bDeduct\').textContent=deducted.toFixed(3)+\' kg\';
+ document.getElementById(\'bNetKg\').textContent=net.toFixed(3);
+ document.getElementById(\'bNetQtl\').textContent=(net/100).toFixed(4);
+
+ for(let i=0;i<5;i++) document.getElementById(\'c\'+(i+1)).textContent=colTotals[i]?colTotals[i].toFixed(3):\'-\';
+}
+function clearAll(){
+ if(confirm(\'Clear all?\')){ document.getElementById(\'tbody\').innerHTML=\'\'; rowCount=0; addRow(); addRow(); calc(); }
+}
+function loadImg(e){
+ let file=e.target.files[0];
+ if(file){ let url=URL.createObjectURL(file); let img=document.getElementById(\'receiptImg\'); img.src=url; img.style.display=\'block\'; }
+}
+function saveImage(){
+ html2canvas(document.getElementById(\'capture\'),{scale:2,backgroundColor:\'#0f1a0f\'}).then(canvas=>{
+   let a=document.createElement(\'a\');
+   a.download=`Rice_${document.getElementById(\'pName\').value||\'Receipt\'}_${new Date().toLocaleDateString()}.png`;
+   a.href=canvas.toDataURL(\'image/png\');
+   a.click();
+ });
+}
+document.getElementById(\'allot\').addEventListener(\'input\',calc);
+document.getElementById(\'pName\').addEventListener(\'input\',calc);
+addRow();addRow();addRow();
+</script>
+</body>
+</html>
